@@ -1,122 +1,153 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useMemo, useState } from "react";
+import { initialProducts } from "./data/initialProducts";
+import ProductCard from "./components/ProductCard";
+import ProductFormModal from "./components/ProductFormModal";
+import DeleteConfirmModal from "./components/DeleteConfirmModal";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [products, setProducts] = useState(initialProducts);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [formModal, setFormModal] = useState({
+    isOpen: false,
+    mode: "add",
+    product: null,
+  });
+
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    product: null,
+  });
+
+  const filteredProducts = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+    if (!keyword) return products;
+    return products.filter((item) =>
+      item.name.toLowerCase().includes(keyword)
+    );
+  }, [products, searchQuery]);
+
+  const handleOpenAdd = () => {
+    setFormModal({ isOpen: true, mode: "add", product: null });
+  };
+
+  const handleOpenEdit = (product) => {
+    setFormModal({ isOpen: true, mode: "edit", product });
+  };
+
+  const handleCloseForm = () => {
+    setFormModal((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleSaveProduct = ({ id, name, price }) => {
+    if (formModal.mode === "add") {
+      const nextId =
+        products.length > 0 ? Math.max(...products.map((p) => p.id)) + 1 : 1;
+      setProducts((prev) => [...prev, { id: nextId, name, price }]);
+    } else {
+      setProducts((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, name, price } : item))
+      );
+    }
+    handleCloseForm();
+  };
+
+  const handleOpenDelete = (product) => {
+    setDeleteModal({ isOpen: true, product });
+  };
+
+  const handleCloseDelete = () => {
+    setDeleteModal({ isOpen: false, product: null });
+  };
+
+  const handleConfirmDelete = (id) => {
+    setProducts((prev) => prev.filter((item) => item.id !== id));
+    handleCloseDelete();
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
+    <div className="page-wrapper">
+      <main className="container">
+        <header className="page-header">
+          <div>
+            <h1>Manajemen Produk</h1>
+            <p className="subtitle">
+              Kelola daftar produk dan harga dalam satu tempat.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleOpenAdd}
+          >
+            + Tambah Produk
+          </button>
+        </header>
+
+        <section className="toolbar">
+          <div className="search-box">
+            <svg
+              className="search-icon"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Cari nama produk..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <span className="total-count">{products.length} produk</span>
+        </section>
+
+        <section className="product-grid" aria-live="polite">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onEdit={handleOpenEdit}
+                onDelete={handleOpenDelete}
+              />
+            ))
+          ) : (
+            <div className="empty-state">
+              Tidak ada produk yang cocok dengan pencarian.
+            </div>
+          )}
+        </section>
+
+        <footer className="page-footer">
           <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+            Menampilkan {filteredProducts.length} dari {products.length} produk
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        </footer>
+      </main>
 
-      <div className="ticks"></div>
+      <ProductFormModal
+        isOpen={formModal.isOpen}
+        mode={formModal.mode}
+        initialData={formModal.product}
+        onClose={handleCloseForm}
+        onSubmit={handleSaveProduct}
+      />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        product={deleteModal.product}
+        onClose={handleCloseDelete}
+        onConfirm={handleConfirmDelete}
+      />
+    </div>
+  );
 }
-
-export default App
